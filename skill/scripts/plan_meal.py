@@ -62,7 +62,7 @@ def norm(name: str) -> str:
 
 
 def find_nutrition(name: str, nutrition: dict, category: str = ""):
-    """精确 → 归一化 → 互含子串 匹配营养库。套餐(combo)不做子串匹配，避免误配单品的营养值。"""
+    """精确 → 归一化 → 相似度最高子串 匹配营养库。套餐(combo)不做模糊匹配，避免误配单品。"""
     if name in nutrition:
         return nutrition[name], False
     n = norm(name)
@@ -71,10 +71,16 @@ def find_nutrition(name: str, nutrition: dict, category: str = ""):
             return v, False
     if category == "combo":
         return None, True
+    from difflib import SequenceMatcher
+    best, best_score = None, 0.0
     for k, v in nutrition.items():
         nk = norm(k)
         if n and (n in nk or nk in n):
-            return v, False
+            score = SequenceMatcher(None, n, nk).ratio()
+            if score > best_score:
+                best, best_score = v, score
+    if best is not None:
+        return best, False
     return None, True
 
 

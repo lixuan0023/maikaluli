@@ -1,6 +1,6 @@
 ---
 name: maikaluli
-description: 麦卡路里——基于麦当劳 MCP 的热量管理配餐技能，带个人记忆。当用户想按热量目标吃麦当劳（"午餐帮我配一顿 600 卡的"、"麦当劳怎么吃不超热量"、"巨无霸多少卡"、"帮我记住我不吃辣"），或需要按口味禁忌/减脂目标/预算推荐麦当劳套餐时使用。调用 mcd-mcp 拉取真实菜单、营养数据和优惠券，用内置脚本配餐并叠券，画像存本地记忆越用越懂你。
+description: 麦卡路里——基于麦当劳 MCP 的热量管理配餐技能，带个人记忆与营养账本。当用户想按热量目标吃麦当劳（"午餐帮我配一顿 600 卡的"、"麦当劳怎么吃不超热量"、"巨无霸多少卡"、"帮我记住我不吃辣"）、要按口味禁忌/减脂增肌目标/预算配餐，或想同步麦当劳订单做饮食记录、生成"麦门周报"热量可视化卡片时使用。调用 mcd-mcp 拉取真实菜单、营养数据、优惠券与历史订单，用内置脚本配餐叠券、生成麦当劳风格周报，画像与账本存本地越用越懂你。
 agent_created: true
 ---
 
@@ -67,6 +67,23 @@ agent_created: true
 
 配餐时若 `campaign-calendar` 有进行中的活动特价品，加入候选并在方案里标注「活动款」。不主动长篇推活动。
 
+### 流程 5：账本同步（差异化核心）
+
+触发：「记一下我今天吃的」「同步我的订单」，或每次配餐/周报前自动执行。
+
+1. 账本文件：`~/.workbuddy/skills-data/maikaluli/ledger.json`（entries 数组，格式见 `scripts/weekly_report.py` docstring）。
+2. **自动同步**：调 `order-list` 拉真实订单 → 跳过已取消订单 → 逐商品精确匹配 `list-nutrition-foods` 营养（饮品注意温度杯型，如「热燕麦奶中杯」≠「燕麦奶」，拿不准用 `query-meal-detail` 查规格）→ 按下单日期写入账本，按 orderId 去重。
+3. **手动记账**：用户口述吃了什么时，查营养库后追加 source=manual 的记录。
+4. **配餐闭环**：流程 1 配餐前读本账本——本周累计已超目标时，主动收紧今日建议热量（如目标 -150），并说明原因。
+
+### 流程 6：麦门周报
+
+触发：「我的麦门周报」「这周吃得怎么样」
+
+1. 先走流程 5 同步账本。
+2. 运行 `scripts/weekly_report.py`（默认读账本+画像，`-o` 指定输出），生成麦当劳品牌风格 HTML 卡片（红 #DA291C / 黄 #FFC72C）。
+3. 用 present_files 把卡片给用户，并配一句总结（超了几天、最爱吃什么、下周建议）。
+
 ## 硬性规则
 
 - **不编造**：菜单、价格、营养、券只来自 MCP 返回；估算营养必须标「估」。
@@ -79,3 +96,4 @@ agent_created: true
 
 - `references/mcp-tools.md`：mcd-mcp 工具实测文档——接入配置、配餐链路调用时序、关键入参（storeCode/beCode/beType/orderType）、错误处理。
 - `scripts/plan_meal.py`：配餐优化器。`python scripts/plan_meal.py input.json`，输入输出格式见脚本 docstring。目标函数：热量贴近目标优先，同热量下叠券后实付最低。
+- `scripts/weekly_report.py`：麦门周报卡片生成器。`python scripts/weekly_report.py [ledger.json] [profile.json] [-o out.html]`，默认读本机账本与画像，输出麦当劳风格自包含 HTML。
