@@ -48,7 +48,7 @@ agent_created: true
 1. 读画像；`auto-bind-coupons` 领券（省钱是标配动作）。
 2. 并行拉数据：`query-meals`（门店真实菜单+价格）、`list-nutrition-foods`（营养库）、`query-store-coupons`（该店可用券）。链路细节见 `references/mcp-tools.md`。
 3. 调用 `scripts/plan_meal.py`：传入菜单+营养+券+画像，得 Top 3 方案。营养库缺失的单品用常识估算并在输出标「估」。套餐类商品（四件套/双人餐等）营养库匹配不到时，可用 `query-meal-detail` 拆解成单品后分别查营养求和，比估算更准。
-4. 输出每套方案：清单、总热量（vs 目标）、三大营养素简表、原价、用券、实付、省多少。推荐首选并说理由（如「蛋白质最高，适合减脂」）。
+4. 输出每套方案：清单、总热量（vs 目标）、三大营养素简表、原价、用券、实付、省多少。推荐首选并说理由（如「蛋白质最高，适合减脂」）。用户选定方案后，可用 `scripts/calorie_card.py` 生成该方案的「卡路里卡片」（热量主角+营养素占比条，麦当劳红黄风），present 给用户。
 5. 收尾提醒：以 App 实际结算与营养标示为准；不擅自下单。
 
 ### 流程 1.5：下单与订单卡片
@@ -105,3 +105,4 @@ agent_created: true
 - `scripts/plan_meal.py`：配餐优化器。`python scripts/plan_meal.py input.json`，输入输出格式见脚本 docstring。目标函数：热量贴近目标优先，同热量下叠券后实付最低。
 - `scripts/weekly_report.py`：麦门周报卡片生成器。`python scripts/weekly_report.py [ledger.json] [profile.json] [-o out.html]`，默认读本机账本与画像，输出麦当劳风格自包含 HTML。
 - `scripts/order_card.py`：订单卡片生成器。`python scripts/order_card.py order.json [-o out.html]`，商品图从 URL 下载内嵌 base64，输入格式见脚本 docstring。
+- `scripts/calorie_card.py`：卡路里卡片生成器。`python scripts/calorie_card.py input.json [-o out.html]`，热量大字+目标进度+三大营养素占比条，输入格式见脚本 docstring。
